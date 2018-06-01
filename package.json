@@ -1,0 +1,36 @@
+{
+  "name": "noia-node-contents-client",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "postinstall": "tsc --skipLibCheck",
+    "build": "npm run build-ts",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w"
+  },
+  "keywords": [],
+  "author": {
+    "name": "NOIA Network Limited"
+  },
+  "license": "LGPL-2.1",
+  "devDependencies": {
+    "fs-chunk-store": "^1.7.0",
+    "immediate-chunk-store": "^1.0.8",
+    "jest": "^22.4.3",
+    "ws": "^5.1.1"
+  },
+  "dependencies": {
+    "@types/mkdirp": "^0.5.2",
+    "@types/node": "^10.1.1",
+    "jsonfile": "^4.0.0",
+    "mkdirp": "^0.5.1",
+    "noia-protocol": "https://github.com/noia-network/noia-protocol.git",
+    "speedometer": "^1.0.0",
+    "typescript": "^2.8.3",
+    "winston": "^2.4.2"
+  }
+}
