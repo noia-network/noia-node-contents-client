@@ -13,16 +13,17 @@ const server = http.createServer()
 const wss = new WebSocket.Server({ server })
 wss.on("connection", ws => {
     const wire = new Wire(ws)
-    wire.on("handshake", () => {
-      const metadata = {
-        infoHash: "f8f40a6b918314b6ec7cb71d487aec1d529b163b",
-        pieces: "691"
-      }
-      wire.seed(metadata)
-    })
-    wire.on("requested", info => {
-      handleMessage(wire, info)
-    })
+    wire.handshake()
+      .then(() => {
+        const metadata = {
+          infoHash: "f8f40a6b918314b6ec7cb71d487aec1d529b163b",
+          pieces: "691"
+        }
+        wire.seed(metadata)
+        wire.on("requested", info => {
+          handleMessage(wire, info)
+        })
+      })
 })
 server.listen(7777, "localhost", err => {
     if (err) throw new Error(err)
@@ -39,17 +40,11 @@ function handleMessage(wire, params) {
     }
     store.get(piece, (err, dataBuf) => {
       if (err) throw new Error(err)
-      console.log("Wtf", params)
-      console.log(`response infoHash=${infoHash} index=${piece} length=${dataBuf.length}`)      
+      console.log(`response infoHash=${infoHash} index=${piece} length=${dataBuf.length}`)
       const buf = responseBuffer(piece, infoHash, dataBuf)
-      // console.log(`response infoHash=${infoHash} index=${piece} length=${dataBuf.length}`)
-      // try {
       wire.response(buf)
-      // } catch (e) {
-      //   console.log('error', e)
-      // }
     })
-  
+
     function responseBuffer (part, infoHash, dataBuf) {
       const partBuf = Buffer.allocUnsafe(4)
       partBuf.writeUInt32BE(part)
