@@ -5,6 +5,7 @@ import fs from "fs"
 import logger from "./lib/logger"
 import mkdirp from "mkdirp"
 import path from "path"
+const jsonfile = require("jsonfile")
 const speedometer = require("speedometer")
 
 export = class ContentsClient extends EventEmitter {
@@ -33,6 +34,10 @@ export = class ContentsClient extends EventEmitter {
     this.dir = dir
     this.metadataPath = path.join(dir, "metadata.json")
     this.master = master
+
+    if (!fs.existsSync(this.metadataPath)) {
+      jsonfile.writeFileSync(this.metadataPath, {}, { spaces: 2 })
+    }
 
     Object.defineProperty(ContentsClient.prototype, "downloadSpeed", {
       get: () => { return this._downloadSpeed() }
