@@ -1,14 +1,14 @@
-const winston = require("winston");
+import winston from "winston";
 
 const options = {
-  transports: [
-    new winston.transports.Console({
-      colorize: true,
-      label: "noia-contents-client",
-      json: false
-    })
-  ],
-  exitOnError: false,
-}
+    transports: [
+        new winston.transports.Console({
+            colorize: true,
+            label: "noia-contents-client",
+            json: false
+        })
+    ],
+    exitOnError: false
+};
 
-export = new winston.Logger(options)
+export = new winston.Logger(options);
