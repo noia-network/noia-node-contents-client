@@ -63,7 +63,10 @@ export = class Content extends EventEmitter {
     }
 
     download(missingPieces: any) {
-        if (!this.master || !this.master._wire) return logger.info("Skipping download... no master wire to download content from.");
+        if (!this.master || !this.master._wire) {
+            logger.info("Skipping download... no master wire to download content from.");
+            return;
+        }
         this.emit("downloading");
         this.master._wire.on("response", (info: any) => {
             const buffer = Buffer.from(info.data, "hex");
