@@ -36,8 +36,16 @@ export = class ContentsClient extends EventEmitter {
         this.metadataPath = path.join(dir, "metadata.json");
         this.master = master;
 
-        if (!fs.existsSync(this.metadataPath)) {
-            jsonfile.writeFileSync(this.metadataPath, {}, { spaces: 2 });
+        try {
+            if (!fs.existsSync(this.metadataPath)) {
+                jsonfile.writeFileSync(this.metadataPath, {}, { spaces: 2 });
+            }
+        } catch (ex) {
+            if (ex.code === "EPERM") {
+                throw new Error("File access permissions violation. Open application as an administrator.");
+            } else {
+                throw ex;
+            }
         }
 
         Object.defineProperty(ContentsClient.prototype, "downloadSpeed", {
