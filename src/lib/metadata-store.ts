@@ -70,10 +70,27 @@ export = class MetadataStore extends EventEmitter {
                 this.emit("notChanged", contents);
             }
         }
-        jsonfile.writeFileSync(this.file, contents, { spaces: 2 });
+
+        try {
+            jsonfile.writeFileSync(this.file, contents, { spaces: 2 });
+        } catch (ex) {
+            if (ex.code === "EPERM") {
+                throw new Error("File access permissions violation. Open application as an administrator.");
+            } else {
+                throw ex;
+            }
+        }
     }
 
     _read() {
-        return jsonfile.readFileSync(this.file);
+        try {
+            return jsonfile.readFileSync(this.file);
+        } catch (ex) {
+            if (ex.code === "EPERM") {
+                throw new Error("File access permissions violation. Open application as an administrator.");
+            } else {
+                throw ex;
+            }
+        }
     }
 };
