@@ -5,7 +5,8 @@ const options = {
         new winston.transports.Console({
             colorize: true,
             label: "noia-contents-client",
-            json: false
+            json: false,
+            handleExceptions: true
         })
     ],
     exitOnError: false
