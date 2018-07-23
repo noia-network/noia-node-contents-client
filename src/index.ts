@@ -8,6 +8,7 @@ const speedometer = require("speedometer");
 import MetadataStore from "./lib/metadata-store";
 import logger from "./lib/logger";
 import Content from "./lib/content";
+import { StorageStats } from "./lib/contracts";
 
 export = class ContentsClient extends EventEmitter {
     public contents: any;
@@ -19,8 +20,9 @@ export = class ContentsClient extends EventEmitter {
     public metadataPath: any;
     public master: any;
     public metadataStore: any;
+    public storageStats?: StorageStats;
 
-    constructor(master: any, dir: any) {
+    constructor(master: any, dir: any, storageStats?: StorageStats) {
         super();
 
         this.contents = {};
@@ -33,6 +35,7 @@ export = class ContentsClient extends EventEmitter {
         this._downloadSpeed = speedometer(3);
         this._uploadSpeed = speedometer(3);
         this.dir = dir;
+        this.storageStats = storageStats;
         this.metadataPath = path.join(dir, "metadata.json");
         this.master = master;
 
@@ -103,7 +106,7 @@ export = class ContentsClient extends EventEmitter {
 
     _add(metadata: any) {
         if (this._destroyed) return;
-        const content = new Content(this.master, metadata, this.dir);
+        const content = new Content(this.master, metadata, this.dir, this.storageStats);
         this.contentsNotVerified[content.infoHash] = content;
         content.on("idle", () => {
             delete this.contentsNotVerified[content.infoHash];
