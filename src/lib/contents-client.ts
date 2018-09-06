@@ -63,7 +63,7 @@ export class ContentsClient extends EventEmitter {
         });
     }
 
-    start() {
+    public start() {
         this.metadataStore = new MetadataStore(this.metadataPath);
         this.metadataStore.on("added", (metadata: any) => this._add(metadata));
         this.metadataStore.on("removed", (infoHash: string) => this._remove(infoHash));
@@ -75,21 +75,24 @@ export class ContentsClient extends EventEmitter {
         });
     }
 
-    stop() {
+    public stop() {
         this.contents = {};
         this.metadataStore = null;
     }
 
-    add(metadata: any) {
+    public add(metadata: any) {
         this.metadataStore.add(metadata);
     }
 
-    remove(infoHash: any) {
+    public remove(infoHash: any) {
         this.metadataStore.remove(infoHash);
     }
 
-    get(id: any) {
-        if (this._destroyed) return;
+    public get(id: any) {
+        if (this._destroyed) {
+            logger.warn("Called get() when contents client instance is destroyed.");
+            return;
+        }
         if (Array.isArray(id)) {
             const contents: string[] = [];
             id.forEach(infoHash => contents.push(this.contents[infoHash]));
@@ -99,13 +102,19 @@ export class ContentsClient extends EventEmitter {
         }
     }
 
-    getInfoHashes() {
-        if (this._destroyed) return;
+    public getInfoHashes(): string[] {
+        if (this._destroyed) {
+            logger.warn("Called getInfoHashes() when contents client instance is destroyed.");
+            return [];
+        }
         return Object.keys(this.contents);
     }
 
-    _add(metadata: any) {
-        if (this._destroyed) return;
+    private _add(metadata: any) {
+        if (this._destroyed) {
+            logger.warn("Called _add() when contents client instance is destroyed.");
+            return;
+        }
         const content = new Content(this.master, metadata, this.dir, this.storageStats);
         this.contentsNotVerified[content.infoHash] = content;
         content.on("idle", () => {
@@ -126,13 +135,16 @@ export class ContentsClient extends EventEmitter {
         });
     }
 
-    _remove(infoHash: any) {
-        if (this._destroyed) return;
+    private _remove(infoHash: any) {
+        if (this._destroyed) {
+            logger.warn("Called _remove() when contents client instance is destroyed.");
+            return;
+        }
         delete this.contents[infoHash];
         this.emit("seeding", this.getInfoHashes());
     }
 
-    destroy() {
+    public destroy() {
         return new Promise(resolve => {
             this._destroyed = true;
             resolve();
