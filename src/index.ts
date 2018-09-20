@@ -1,1 +1,2 @@
-export * from "./lib/contents-client";
+export * from "./contents-client";
+export * from "./contracts";
