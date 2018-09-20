@@ -1,15 +1,20 @@
 {
+    "publishConfig": {
+        "tag": "rc"
+    },
     "name": "@noia-network/node-contents-client",
-    "version": "0.2.4",
+    "version": "1.0.0-rc",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "tsc -p . --noEmit",
+        "build": "tsc",
+        "pretest": "tsc -p . --noEmit",
+        "test": "npm run tslint && echo Warning: jest tests are skipped.",
         "posttest": "npm run prettier",
-        "build": "npm run build-ts",
-        "build-ts": "tsc",
-        "watch-ts": "tsc -w",
+        "tslint": "tslint --project . --config ./tslint.json && echo Successfully passed tslint test.",
+        "watch-jest": "jest --watch",
+        "watch": "tsc -w",
         "prettier": "prettier \"src/**/*\" -l"
     },
     "keywords": [],
@@ -18,26 +23,28 @@
     },
     "license": "LGPL-2.1",
     "devDependencies": {
+        "@types/ws": "^6.0.1",
         "fs-chunk-store": "^1.7.0",
         "immediate-chunk-store": "^1.0.8",
         "jest": "^22.4.3",
-        "prettier": "^1.13.5",
-        "typescript": "^2.8.3",
-        "ws": "^5.1.1"
+        "prettier": "^1.14.2",
+        "simplr-tslint": "^1.0.0-alpha.14",
+        "tslint": "^5.11.0",
+        "tslint-language-service": "^0.9.9",
+        "typescript": "^3.0.0",
+        "ws": "^6.0.0"
     },
     "dependencies": {
-        "@noia-network/protocol": "^0.3.7",
-        "@types/jsonfile": "^4.0.1",
-        "@types/mkdirp": "^0.5.2",
+        "@noia-network/protocol": "^1.0.0-rc",
+        "@types/fs-extra": "^5.0.4",
         "@types/node": "^10.1.1",
-        "@types/rimraf": "^2.0.2",
         "@types/winston": "^2.3.9",
         "diskusage": "^0.2.4",
-        "jsonfile": "^4.0.0",
-        "mkdirp": "^0.5.1",
+        "fs-extra": "^7.0.0",
         "os": "^0.1.1",
-        "rimraf": "^2.6.2",
         "speedometer": "^1.0.0",
+        "strict-event-emitter-types": "^2.0.0",
+        "tslib": "^1.9.3",
         "winston": "^2.4.2"
     },
     "files": [

@@ -1,4 +1,4 @@
-import winston from "winston";
+import * as winston from "winston";
 
 const options = {
     transports: [
@@ -12,4 +12,4 @@ const options = {
     exitOnError: false
 };
 
-export = new winston.Logger(options);
+export let logger = new winston.Logger(options);
