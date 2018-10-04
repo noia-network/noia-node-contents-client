@@ -128,27 +128,33 @@ export class Content extends ContentEmitter {
         this.contentTransferer.requested(missigPiece, this.metadata.infoHash);
     }
 
-    public async getResponseBuffer(piece: number, offset: number, length: number): Promise<Buffer> {
+    public async getResponseBuffer(
+        piece: number,
+        offset: number,
+        length: number
+    ): Promise<{
+        contentId: string;
+        index: number;
+        offset: number;
+        length: number;
+        buffer: Buffer;
+    }> {
         const filePath = path.join(this.storageDir, this.metadata.infoHash, piece.toString());
         const fd = await fs.open(filePath, "r");
         const stats = await fs.stat(filePath);
         const size = length && length > 0 && length <= stats.size - offset ? length : stats.size - offset;
         const dataBuffer = Buffer.allocUnsafe(size);
         await fs.read(fd, dataBuffer, 0, size, offset);
-        const resBuffer = concatBuffers(piece, offset, this.metadata.infoHash, dataBuffer);
-        // logger.info(`response infoHash=${this.infoHash} index=${piece} length=${dataBuffer.length}`)
+        // const resBuffer = concatBuffers(this.metadata.infoHash, dataBuffer);
+        // logger.info(`response infoHash=${this.metadata.infoHash} index=${piece} length=${dataBuffer.length}`)
         await fs.close(fd);
-        return resBuffer;
-
-        function concatBuffers(part: number, partOffset: number, infoHash: string, buff: Buffer): Buffer {
-            const partBuf = Buffer.allocUnsafe(4);
-            const offsetBuf = Buffer.allocUnsafe(4);
-            partBuf.writeUInt32BE(part, 0, undefined);
-            offsetBuf.writeUInt32BE(partOffset, 0, undefined);
-            const infoHashBuf = Buffer.from(infoHash, "hex");
-            const buf = Buffer.concat([partBuf, offsetBuf, infoHashBuf, buff]);
-            return buf;
-        }
+        return {
+            contentId: this.metadata.infoHash,
+            buffer: dataBuffer,
+            index: piece,
+            length: size,
+            offset: offset
+        };
     }
 
     // TODO: inspect if storageStats is correctly used.
