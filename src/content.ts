@@ -128,7 +128,7 @@ export class Content extends ContentEmitter {
         this.contentTransferer.requested(missigPiece, this.metadata.infoHash);
     }
 
-    public async getResponseBuffer(
+    public async getContentData(
         piece: number,
         offset: number,
         length: number
