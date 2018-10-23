@@ -13,6 +13,8 @@ export interface ContentsClientEvents {
     seeding: (this: ContentsClient, infoHashes: string[]) => this;
     downloaded: (this: ContentsClient, chunkSize: number) => this;
     uploaded: (this: ContentsClient, chunkSize: number) => this;
+    downloadSpeed: (this: ContentsClient, bytesPerSecond: number) => this;
+    uploadSpeed: (this: ContentsClient, bytesPerSecond: number) => this;
 }
 
 const ContentsClientEmitter: { new (): StrictEventEmitter<EventEmitter, ContentsClientEvents> } = EventEmitter;
@@ -24,6 +26,26 @@ export class ContentsClient extends ContentsClientEmitter {
         private readonly storageStats?: StorageStats
     ) {
         super();
+
+        // Emit download speed.
+        let prevDownloadSpeed: number | null = null;
+        setInterval(() => {
+            const currDownloadSpeed = this.downloadSpeed;
+            if (currDownloadSpeed !== prevDownloadSpeed) {
+                this.emit("downloadSpeed", currDownloadSpeed);
+            }
+            prevDownloadSpeed = currDownloadSpeed;
+        }, 1 * 1000);
+
+        // Emit upload speed.
+        let prevUploadSpeed: number | null = null;
+        setInterval(() => {
+            const currUploadSpeed = this.uploadSpeed;
+            if (currUploadSpeed !== prevUploadSpeed) {
+                this.emit("uploadSpeed", currUploadSpeed);
+            }
+            prevUploadSpeed = currUploadSpeed;
+        }, 1 * 1000);
     }
 
     private isDestroyed: boolean = false;
