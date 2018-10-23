@@ -27,7 +27,7 @@ wire.once("handshake", async () => {
     client.on("seeding", async infoHashes => {
         console.info("seeding", infoHashes);
         const content = client.get("f8f40a6b918314b6ec7cb71d487aec1d529b163b");
-        await (content as Content).getResponseBuffer(690, 0, 0);
+        await (content as Content).getContentData(690, 0, 0);
         console.info("data");
     });
     client.on("downloaded", chunkSize => {
