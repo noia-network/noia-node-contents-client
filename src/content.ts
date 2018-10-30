@@ -31,6 +31,8 @@ export class Content extends ContentEmitter {
         this.checkDirectoriesAndVerify();
     }
 
+    private missingPieces: number[] = [];
+
     private async checkDirectoriesAndVerify(): Promise<void> {
         const contentDir = path.join(this.storageDir, this.metadata.infoHash);
         await fs.ensureDir(this.storageDir);
@@ -67,30 +69,20 @@ export class Content extends ContentEmitter {
     }
 
     public download(missingPieces: number[]): void {
+        this.missingPieces = missingPieces;
         if (this.contentTransferer == null) {
             logger.info("Skipping download... no master wire to download content from.");
             return;
         }
         this.emit("downloading");
-        this.contentTransferer.on("response", info => {
-            const buffer = Buffer.from(info.data.data, "hex");
-            const infoHashLength = 24;
-            const pieceBuffer = buffer.slice(infoHashLength, buffer.length);
-
-            if (!this.isEnoughSpace(pieceBuffer.length)) {
-                this.deleteHash();
-                return;
-            }
-            this.proceedDownload(missingPieces, buffer, pieceBuffer);
-        });
         if (this.contentTransferer.isConnected()) {
-            const missingPiece = missingPieces.shift();
+            const missingPiece = this.missingPieces.shift();
             if (missingPiece != null) {
                 this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
             }
         } else {
-            this.contentTransferer.on("connected", () => {
-                const missingPiece = missingPieces.shift();
+            this.contentTransferer.once("connected", () => {
+                const missingPiece = this.missingPieces.shift();
                 if (missingPiece != null) {
                     this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
                 }
@@ -98,7 +90,7 @@ export class Content extends ContentEmitter {
         }
     }
 
-    public proceedDownload(missingPieces: number[], buffer: Buffer, pieceBuffer: Buffer): void {
+    public proceedDownload(buffer: Buffer, pieceBuffer: Buffer): void {
         const piece = buffer.readUInt32BE(0).toString();
         const infoHashLength = 24;
         const infoHash = buffer.toString("hex", 4, infoHashLength);
@@ -107,7 +99,7 @@ export class Content extends ContentEmitter {
         logger.info(`Received (piece ${piece}, infoHash ${infoHash}, length ${buffer.length - infoHashLength}, sha1 ${digest}).`);
         this.emit("downloaded", buffer.length);
         fs.writeFile(path.join(this.storageDir, infoHash, piece), pieceBuffer, "binary");
-        this.next(missingPieces, () => {
+        this.next(this.missingPieces, () => {
             if (this.$isVerified) {
                 return;
             }
@@ -162,7 +154,7 @@ export class Content extends ContentEmitter {
         let storagePath: string;
         const requiredSpace: number = this.metadata.pieces * pieceLength;
 
-        if (storageStats != null && storageStats.available && storageStats.available < requiredSpace) {
+        if (storageStats != null && storageStats.available < requiredSpace) {
             logger.error("Not enough space in available storage.");
             return false;
         }
