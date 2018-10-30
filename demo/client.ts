@@ -9,7 +9,7 @@ class Transfered extends Wire<NodeMetadata, MasterMetadata> implements ContentTr
             nodeId: "nodeId",
             version: "1.0.0",
             interface: "cli",
-            walletAddress: "any",
+            airdropAddress: "any",
             connections: { webrtc: null, ws: 7676, wss: null }
         });
     }

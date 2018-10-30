@@ -46,6 +46,22 @@ export class ContentsClient extends ContentsClientEmitter {
             }
             prevUploadSpeed = currUploadSpeed;
         }, 1 * 1000);
+
+        this.contentTransferer.on("response", info => {
+            const buffer = Buffer.from(info.data.data, "hex");
+            const infoHashLength = 24;
+            const infoHash = buffer.toString("hex", 4, infoHashLength);
+            const pieceBuffer = buffer.slice(infoHashLength, buffer.length);
+
+            const content = this.contentsNotVerified.get(infoHash);
+            if (content != null) {
+                if (!content.isEnoughSpace(pieceBuffer.length, storageStats)) {
+                    content.deleteHash();
+                    return;
+                }
+                content.proceedDownload(buffer, pieceBuffer);
+            }
+        });
     }
 
     private isDestroyed: boolean = false;
