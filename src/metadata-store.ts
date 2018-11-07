@@ -48,10 +48,10 @@ export class MetadataStore extends MetadataStoreEmitter {
         this.write({});
     }
 
-    public remove(infoHash: string): void {
+    public async remove(infoHash: string): Promise<void> {
         const contentsMetadata = this.read();
         delete contentsMetadata[infoHash];
-        this.write(contentsMetadata);
+        await this.write(contentsMetadata);
     }
 
     private async write(contents: ContentsMetadata): Promise<void> {

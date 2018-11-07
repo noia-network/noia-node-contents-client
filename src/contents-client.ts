@@ -108,8 +108,12 @@ export class ContentsClient extends ContentsClientEmitter {
         this.getMetadataStore().add(metadata);
     }
 
-    public remove(infoHash: string): void {
-        this.getMetadataStore().remove(infoHash);
+    public async remove(infoHash: string): Promise<void> {
+        const content = this.contents.get(infoHash);
+        if (content != null) {
+            await this.getMetadataStore().remove(infoHash);
+            await content.deleteHash();
+        }
     }
 
     private getMetadataStore(): MetadataStore {
