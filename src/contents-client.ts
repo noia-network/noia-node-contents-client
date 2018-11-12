@@ -23,7 +23,7 @@ export class ContentsClient extends ContentsClientEmitter {
     constructor(
         public readonly contentTransferer: ContentTransferer,
         private readonly dir: string = path.resolve(),
-        private readonly storageStats?: StorageStats
+        readonly storageStats: () => Promise<StorageStats>
     ) {
         super();
 
@@ -47,15 +47,16 @@ export class ContentsClient extends ContentsClientEmitter {
             prevUploadSpeed = currUploadSpeed;
         }, 1 * 1000);
 
-        this.contentTransferer.on("response", info => {
+        this.contentTransferer.on("response", async info => {
             const buffer = Buffer.from(info.data.data, "hex");
-            const infoHashLength = 24;
-            const infoHash = buffer.toString("hex", 4, infoHashLength);
+            const pieceBytes = 4;
+            const infoHashLength = pieceBytes + 20;
+            const infoHash = buffer.toString("hex", pieceBytes, infoHashLength);
             const pieceBuffer = buffer.slice(infoHashLength, buffer.length);
 
             const content = this.contentsNotVerified.get(infoHash);
             if (content != null) {
-                if (!content.isEnoughSpace(pieceBuffer.length, storageStats)) {
+                if (!(await content.isEnoughSpace(pieceBuffer.length, storageStats))) {
                     content.deleteHash();
                     return;
                 }
@@ -104,8 +105,8 @@ export class ContentsClient extends ContentsClientEmitter {
         this.metadataStore = undefined;
     }
 
-    public add(metadata: ContentMetadata): void {
-        this.getMetadataStore().add(metadata);
+    public async add(metadata: ContentMetadata): Promise<void> {
+        await this.getMetadataStore().add(metadata);
     }
 
     public async remove(infoHash: string): Promise<void> {
@@ -157,7 +158,7 @@ export class ContentsClient extends ContentsClientEmitter {
             logger.warn("Called internalAdd() when contents client instance is destroyed.");
             return;
         }
-        const content = new Content(this.contentTransferer, metadata, this.dir, this.storageStats);
+        const content = new Content(this.contentTransferer, metadata, this.dir);
         this.contentsNotVerified.set(content.metadata.infoHash, content);
         content.on("idle", () => {
             this.contentsNotVerified.delete(content.metadata.infoHash);

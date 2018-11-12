@@ -32,11 +32,11 @@ export class MetadataStore extends MetadataStoreEmitter {
         });
     }
 
-    public add(metadata: ContentMetadata): void {
+    public async add(metadata: ContentMetadata): Promise<void> {
         const contentsMetadata = this.read();
         const contentMetadata = Helpers.filterContentProps(metadata);
         contentsMetadata[contentMetadata.infoHash] = contentMetadata;
-        this.write(contentsMetadata);
+        await this.write(contentsMetadata);
     }
 
     public get(infoHash: string): ContentMetadata {
