@@ -23,9 +23,7 @@ export class Content extends ContentEmitter {
     constructor(
         public readonly contentTransferer: ContentTransferer,
         public readonly metadata: ContentMetadata,
-        public readonly storageDir: string,
-        // TODO: investigate how it's being used.
-        public storageStats?: StorageStats
+        public readonly storageDir: string
     ) {
         super();
         this.checkDirectoriesAndVerify();
@@ -150,10 +148,13 @@ export class Content extends ContentEmitter {
     }
 
     // TODO: inspect if storageStats is correctly used.
-    public isEnoughSpace(pieceLength: number, storageStats?: StorageStats): boolean {
+    public async isEnoughSpace(pieceLength: number, storageStatsFn: () => Promise<StorageStats>): Promise<boolean> {
         let storagePath: string;
-        const requiredSpace: number = this.metadata.pieces * pieceLength;
+        // Deprecated:
+        // const requiredSpace: number = this.metadata.pieces * pieceLength;
+        const requiredSpace: number = pieceLength;
 
+        const storageStats = await storageStatsFn();
         if (storageStats != null && storageStats.available < requiredSpace) {
             logger.error("Not enough space in available storage.");
             return false;
