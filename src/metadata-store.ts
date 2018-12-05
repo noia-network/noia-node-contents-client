@@ -7,6 +7,7 @@ import { Helpers } from "./helpers";
 export type ContentsMetadata = { [infoHash: string]: ContentMetadata };
 
 export interface ContentMetadata {
+    source?: string | null;
     infoHash: string;
     pieces: number;
 }
@@ -55,18 +56,18 @@ export class MetadataStore extends MetadataStoreEmitter {
     }
 
     private async write(contents: ContentsMetadata): Promise<void> {
-        const oldContents = Object.keys(this.read());
-        const newContents = Object.keys(contents);
-        const removed = oldContents.filter(o => !newContents.find(n => o === n));
-        const added = newContents.filter(n => !oldContents.find(o => n === o));
+        const oldContentsIds = Object.keys(this.read());
+        const newContentsIds = Object.keys(contents);
+        const removedIds = oldContentsIds.filter(o => !newContentsIds.find(n => o === n));
+        const addedIds = newContentsIds.filter(n => !oldContentsIds.find(o => n === o));
         let notChanged = true;
-        for (const infoHash of added) {
+        for (const addedContentId of addedIds) {
             notChanged = false;
-            this.emit("added", contents[infoHash]);
+            this.emit("added", contents[addedContentId]);
         }
-        for (const infoHash of removed) {
+        for (const removedContentId of removedIds) {
             notChanged = false;
-            this.emit("removed", infoHash);
+            this.emit("removed", removedContentId);
         }
         if (notChanged) {
             this.emit("notChanged", contents);

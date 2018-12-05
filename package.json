@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/node-contents-client",
-    "version": "1.0.1",
+    "version": "2.0.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -20,7 +20,7 @@
     },
     "license": "LGPL-2.1",
     "peerDependencies": {
-        "@noia-network/protocol": "^1.0.0"
+        "@noia-network/protocol": "^1.0.1"
     },
     "devDependencies": {
         "@types/ws": "^6.0.1",
@@ -35,17 +35,20 @@
         "ws": "^6.0.0"
     },
     "dependencies": {
-        "@noia-network/protocol": "^1.0.0",
+        "@noia-network/protocol": "^1.0.1",
+        "@noia-network/webrtc-direct-client": "^1.0.0",
         "@types/fs-extra": "^5.0.4",
         "@types/node": "^10.1.1",
         "@types/winston": "^2.3.9",
         "diskusage": "^0.2.4",
         "fs-extra": "^7.0.0",
         "os": "^0.1.1",
+        "protobufjs": "^6.8.8",
         "speedometer": "^1.0.0",
         "strict-event-emitter-types": "^2.0.0",
         "tslib": "^1.9.3",
-        "winston": "^2.4.2"
+        "winston": "^2.4.2",
+        "wrtc": "^0.2.1"
     },
     "files": [
         "dist",
