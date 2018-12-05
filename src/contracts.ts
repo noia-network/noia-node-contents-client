@@ -14,6 +14,9 @@ export interface ContentTransfererEvents {
 }
 
 export interface ContentTransferer extends StrictEventEmitter<EventEmitter, ContentTransfererEvents> {
+    getExternalIp: () => string | undefined;
+    connect: (address?: string) => Promise<void>;
+    disconnect: () => Promise<void>;
     isConnected: () => boolean;
     requested: (missingPieces: number, infoHash: string) => void;
 }

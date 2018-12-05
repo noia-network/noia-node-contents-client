@@ -5,6 +5,7 @@ import { ContentMetadata } from "./metadata-store";
 export namespace Helpers {
     export function filterContentProps(metadata: ContentMetadata): ContentMetadata {
         return {
+            source: metadata.source,
             infoHash: metadata.infoHash,
             pieces: metadata.pieces
         };

@@ -7,6 +7,7 @@ import StrictEventEmitter from "strict-event-emitter-types";
 import { Content } from "./content";
 import { MetadataStore, ContentMetadata } from "./metadata-store";
 import { StorageStats, ContentTransferer } from "./contracts";
+import { WebRtcContentTransferer } from "./webrtc-content-transferer";
 import { logger } from "./logger";
 
 export interface ContentsClientEvents {
@@ -69,7 +70,7 @@ export class ContentsClient extends ContentsClientEmitter {
     private downloadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(3);
     private uploadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(3);
     private metadataStore?: MetadataStore;
-    private contentsNotVerified: Map<string, Content> = new Map<string, Content>();
+    public contentsNotVerified: Map<string, Content> = new Map<string, Content>();
     public readonly contents: Map<string, Content> = new Map<string, Content>();
     public readonly metadataPath: string = path.join(this.dir, "metadata.json");
 
@@ -117,7 +118,7 @@ export class ContentsClient extends ContentsClientEmitter {
         }
     }
 
-    private getMetadataStore(): MetadataStore {
+    public getMetadataStore(): MetadataStore {
         if (this.metadataStore == null) {
             const msg = "MetadataStore is not initialized.";
             logger.error(msg);
@@ -158,9 +159,19 @@ export class ContentsClient extends ContentsClientEmitter {
             logger.warn("Called internalAdd() when contents client instance is destroyed.");
             return;
         }
-        const content = new Content(this.contentTransferer, metadata, this.dir);
+        let content: Content;
+        let webRtcContentTransferer: WebRtcContentTransferer | null = null;
+        if (metadata.source != null) {
+            webRtcContentTransferer = new WebRtcContentTransferer(this, metadata.source, this.contentTransferer.getExternalIp());
+            content = new Content(this, webRtcContentTransferer, metadata, this.dir);
+        } else {
+            content = new Content(this, this.contentTransferer, metadata, this.dir);
+        }
         this.contentsNotVerified.set(content.metadata.infoHash, content);
         content.on("idle", () => {
+            if (webRtcContentTransferer != null) {
+                webRtcContentTransferer.disconnect();
+            }
             this.contentsNotVerified.delete(content.metadata.infoHash);
             this.contents.set(content.metadata.infoHash, content);
             this.emit("seeding", this.getInfoHashes());

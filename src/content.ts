@@ -9,6 +9,7 @@ import { ContentMetadata } from "./metadata-store";
 import { Helpers } from "./helpers";
 import { StorageStats, ContentTransferer } from "./contracts";
 import { logger } from "./logger";
+import { ContentsClient } from "./contents-client";
 
 export interface ContentEvents {
     idle: (this: Content) => this;
@@ -21,6 +22,7 @@ const ContentEmitter: { new (): StrictEventEmitter<EventEmitter, ContentEvents> 
 
 export class Content extends ContentEmitter {
     constructor(
+        public readonly contentsClient: ContentsClient,
         public readonly contentTransferer: ContentTransferer,
         public readonly metadata: ContentMetadata,
         public readonly storageDir: string
@@ -66,25 +68,37 @@ export class Content extends ContentEmitter {
         }
     }
 
-    public download(missingPieces: number[]): void {
+    public async download(missingPieces: number[]): Promise<void> {
         this.missingPieces = missingPieces;
         if (this.contentTransferer == null) {
             logger.info("Skipping download... no master wire to download content from.");
             return;
         }
-        this.emit("downloading");
-        if (this.contentTransferer.isConnected()) {
-            const missingPiece = this.missingPieces.shift();
-            if (missingPiece != null) {
-                this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
-            }
+        if (this.metadata.source != null) {
+            logger.info(`Requesting content data from WebRTC source-address=${this.metadata.source}.`);
         } else {
-            this.contentTransferer.once("connected", () => {
+            logger.info(`Requesting content data from master.`);
+        }
+        try {
+            await this.contentTransferer.connect();
+            this.emit("downloading");
+            if (this.contentTransferer.isConnected()) {
                 const missingPiece = this.missingPieces.shift();
                 if (missingPiece != null) {
                     this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
                 }
-            });
+            } else {
+                this.contentTransferer.once("connected", () => {
+                    const missingPiece = this.missingPieces.shift();
+                    if (missingPiece != null) {
+                        this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
+                    }
+                });
+            }
+        } catch (err) {
+            logger.error("Failed to download content:", err);
+            await this.contentsClient.getMetadataStore().remove(this.metadata.infoHash);
+            await this.deleteHash();
         }
     }
 
@@ -97,6 +111,23 @@ export class Content extends ContentEmitter {
         logger.info(`Received (piece ${piece}, infoHash ${infoHash}, length ${buffer.length - infoHashLength}, sha1 ${digest}).`);
         this.emit("downloaded", buffer.length);
         fs.writeFile(path.join(this.storageDir, infoHash, piece), pieceBuffer, "binary");
+        this.next(this.missingPieces, () => {
+            if (this.$isVerified) {
+                return;
+            }
+            this.$isVerified = true;
+            this.emit("idle");
+        });
+    }
+
+    public proceedWebRtcDownload(pieceBuffer: Buffer, contentId: string, pieceIndex: number): void {
+        const pieceLength = 4;
+        const infoHashLength = 24;
+        const digest = Helpers.sha1(pieceBuffer);
+
+        logger.info(`Received (piece ${pieceIndex}, infoHash ${contentId}, length ${pieceBuffer.length}, sha1 ${digest}).`);
+        this.emit("downloaded", pieceBuffer.length + infoHashLength + pieceLength);
+        fs.writeFile(path.join(this.storageDir, contentId, pieceIndex.toString()), pieceBuffer, "binary");
         this.next(this.missingPieces, () => {
             if (this.$isVerified) {
                 return;
