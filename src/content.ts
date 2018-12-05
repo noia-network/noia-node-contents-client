@@ -74,13 +74,13 @@ export class Content extends ContentEmitter {
             logger.info("Skipping download... no master wire to download content from.");
             return;
         }
-        if (this.metadata.source != null) {
-            logger.info(`Requesting content data from WebRTC source-address=${this.metadata.source}.`);
-        } else {
-            logger.info(`Requesting content data from master.`);
-        }
         try {
-            await this.contentTransferer.connect();
+            if (this.metadata.source != null) {
+                logger.info(`Requesting content data from WebRTC source-address=${this.metadata.source}.`);
+                await this.contentTransferer.connect();
+            } else {
+                logger.info(`Requesting content data from master.`);
+            }
             this.emit("downloading");
             if (this.contentTransferer.isConnected()) {
                 const missingPiece = this.missingPieces.shift();
