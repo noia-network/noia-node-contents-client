@@ -1,6 +1,6 @@
 {
     "name": "@noia-network/node-contents-client",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -48,7 +48,7 @@
         "strict-event-emitter-types": "^2.0.0",
         "tslib": "^1.9.3",
         "winston": "^2.4.2",
-        "wrtc": "^0.3.4"
+        "wrtc": "0.3.4"
     },
     "files": [
         "dist",
