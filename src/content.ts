@@ -129,7 +129,7 @@ export class Content extends ContentEmitter {
             logger.warn(
                 `Received (piece ${pieceIndex}, infoHash ${contentId}, length ${
                     pieceBuffer.length
-                }, sha1 ${digest}) data is invalid. Expected sha1 ${digest}.`
+                }, sha1 ${digest}) data is invalid. Expected sha1 ${this.metadata.piecesIntegrity[pieceIndex]}.`
             );
             this.deleteHash();
             return;
