@@ -10,6 +10,8 @@ export interface ContentMetadata {
     source?: string | null;
     infoHash: string;
     pieces: number;
+    // Optional since supported in latest master only.
+    piecesIntegrity?: string[];
 }
 
 export interface MetadataStoreEvents {

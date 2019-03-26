@@ -125,6 +125,16 @@ export class Content extends ContentEmitter {
         const infoHashLength = 24;
         const digest = Helpers.sha1(pieceBuffer);
 
+        if (this.metadata.piecesIntegrity != null && this.metadata.piecesIntegrity[pieceIndex] !== digest) {
+            logger.warn(
+                `Received (piece ${pieceIndex}, infoHash ${contentId}, length ${
+                    pieceBuffer.length
+                }, sha1 ${digest}) data is invalid. Expected sha1 ${digest}.`
+            );
+            this.deleteHash();
+            return;
+        }
+
         logger.info(`Received (piece ${pieceIndex}, infoHash ${contentId}, length ${pieceBuffer.length}, sha1 ${digest}).`);
         this.emit("downloaded", pieceBuffer.length + infoHashLength + pieceLength);
         fs.writeFile(path.join(this.storageDir, contentId, pieceIndex.toString()), pieceBuffer, "binary");
