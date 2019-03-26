@@ -7,7 +7,8 @@ export namespace Helpers {
         return {
             source: metadata.source,
             infoHash: metadata.infoHash,
-            pieces: metadata.pieces
+            pieces: metadata.pieces,
+            piecesIntegrity: metadata.piecesIntegrity
         };
     }
 
