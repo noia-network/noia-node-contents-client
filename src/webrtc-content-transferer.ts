@@ -72,8 +72,9 @@ export class WebRtcContentTransferer extends WebRtcContentTransfererEmitter impl
         logger.info(`Establishing WebRTC connection to address=${this.address}.`);
 
         this.client = new Client(this.address, {
-            wrtc: wrtc,
-            candidateIp: this.externalIp
+            // FIXME: candidateIp.
+            wrtc: wrtc //,
+            //candidateIp: this.externalIp
         });
         await this.client.connect();
 
