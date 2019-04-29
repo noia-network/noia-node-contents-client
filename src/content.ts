@@ -156,7 +156,9 @@ export class Content extends ContentEmitter {
             logger.warn("Function next() tried to shift piece from an empty array.");
             return;
         }
-        this.contentTransferer.requested(missigPiece, this.metadata.infoHash);
+        setTimeout(() => {
+            this.contentTransferer.requested(missigPiece, this.metadata.infoHash);
+        }, this.contentsClient.downloadRequestTimeoutMs);
     }
 
     public async getContentData(

@@ -1,6 +1,9 @@
 {
+    "publishConfig": {
+        "tag": "rc"
+    },
     "name": "@noia-network/node-contents-client",
-    "version": "2.1.3",
+    "version": "2.2.0-rc.1",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

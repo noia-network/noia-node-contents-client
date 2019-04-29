@@ -10,6 +10,11 @@ import { StorageStats, ContentTransferer } from "./contracts";
 import { WebRtcContentTransferer } from "./webrtc-content-transferer";
 import { logger } from "./logger";
 
+interface ContentsClientOptions {
+    maxUploadBytesPerSecond?: number;
+    maxDownloadBytesPerSecond?: number;
+}
+
 export interface ContentsClientEvents {
     seeding: (this: ContentsClient, infoHashes: string[]) => this;
     downloaded: (this: ContentsClient, chunkSize: number) => this;
@@ -24,13 +29,46 @@ export class ContentsClient extends ContentsClientEmitter {
     constructor(
         public readonly contentTransferer: ContentTransferer,
         private readonly dir: string = path.resolve(),
-        readonly storageStats: () => Promise<StorageStats>
+        readonly storageStats: () => Promise<StorageStats>,
+        public readonly opts: ContentsClientOptions = {}
     ) {
         super();
+
+        const calcTimeoutMs = (transferSpeed: number, maxBytesPerSecond: number | undefined, timeoutMs: number): number => {
+            // If max speed is not set, use as small timeout as posssible.
+            if (maxBytesPerSecond == null || maxBytesPerSecond === 0) {
+                return 0;
+            }
+
+            if (transferSpeed === 0) {
+                return timeoutMs;
+            }
+
+            const change = transferSpeed / maxBytesPerSecond;
+
+            // Escape multiplication by 0.
+            if ((timeoutMs === 0 && change > 0) || timeoutMs < 0.1) {
+                return 0.1;
+            }
+
+            // This implementation of transfer speed control has limitation of delaying up to
+            // speed calculation
+            if (Math.ceil((timeoutMs * change) / 1000) > 1) {
+                logger.warn("Set maximum trasnfer speed is too small to perform reliably!");
+                return 950;
+            }
+
+            return timeoutMs * change;
+        };
 
         // Emit download speed.
         let prevDownloadSpeed: number | null = null;
         setInterval(() => {
+            this.downloadRequestTimeoutMs = calcTimeoutMs(
+                this.downloadSpeed,
+                this.opts.maxDownloadBytesPerSecond,
+                this.downloadRequestTimeoutMs
+            );
             const currDownloadSpeed = this.downloadSpeed;
             if (currDownloadSpeed !== prevDownloadSpeed) {
                 this.emit("downloadSpeed", currDownloadSpeed);
@@ -41,6 +79,7 @@ export class ContentsClient extends ContentsClientEmitter {
         // Emit upload speed.
         let prevUploadSpeed: number | null = null;
         setInterval(() => {
+            this.uploadResponseTimeoutMs = calcTimeoutMs(this.uploadSpeed, this.opts.maxUploadBytesPerSecond, this.uploadResponseTimeoutMs);
             const currUploadSpeed = this.uploadSpeed;
             if (currUploadSpeed !== prevUploadSpeed) {
                 this.emit("uploadSpeed", currUploadSpeed);
@@ -67,12 +106,14 @@ export class ContentsClient extends ContentsClientEmitter {
     }
 
     private isDestroyed: boolean = false;
-    private downloadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(3);
-    private uploadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(3);
+    public downloadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(1);
+    public uploadSpeedSpeedometer: (chunkSize?: number) => number = speedometer(1);
     private metadataStore?: MetadataStore;
     public contentsNotVerified: Map<string, Content> = new Map<string, Content>();
     public readonly contents: Map<string, Content> = new Map<string, Content>();
     public readonly metadataPath: string = path.join(this.dir, "metadata.json");
+    public downloadRequestTimeoutMs: number = 500;
+    public uploadResponseTimeoutMs: number = 500;
 
     public async start(): Promise<void> {
         await this.ensureMetadataFile();
