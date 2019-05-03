@@ -20,6 +20,13 @@ export interface ContentEvents {
 
 const ContentEmitter: { new (): StrictEventEmitter<EventEmitter, ContentEvents> } = EventEmitter;
 
+interface ContentPiece {
+    index: number;
+    integrity: string | null;
+    verified: boolean;
+    reserved: boolean;
+}
+
 export class Content extends ContentEmitter {
     constructor(
         public readonly contentsClient: ContentsClient,
@@ -31,7 +38,7 @@ export class Content extends ContentEmitter {
         this.checkDirectoriesAndVerify();
     }
 
-    private missingPieces: number[] = [];
+    private missingPieces: ContentPiece[] = [];
 
     private async checkDirectoriesAndVerify(): Promise<void> {
         const contentDir = path.join(this.storageDir, this.metadata.infoHash);
@@ -48,27 +55,33 @@ export class Content extends ContentEmitter {
             return;
         }
 
-        const missingPieces = [];
-        for (let i = 0; i <= this.metadata.pieces; i += 1) {
-            if (i === this.metadata.pieces) {
+        const missingPieces: ContentPiece[] = [];
+        for (let index = 0; index <= this.metadata.pieces; index += 1) {
+            if (index === this.metadata.pieces) {
                 return this.verified(missingPieces);
             }
-            if (await fs.pathExists(path.join(this.storageDir, this.metadata.infoHash, i.toString()))) {
-                continue;
+            let verified = false;
+            if (await fs.pathExists(path.join(this.storageDir, this.metadata.infoHash, index.toString()))) {
+                verified = true;
             }
-            missingPieces.push(i);
+            missingPieces.push({
+                index,
+                integrity: Array.isArray(this.metadata.piecesIntegrity) ? this.metadata.piecesIntegrity[index] : null,
+                reserved: false,
+                verified
+            });
         }
     }
 
-    public verified(missingPieces: number[]): void {
-        if (missingPieces.length === 0) {
+    public verified(missingPieces: ContentPiece[]): void {
+        if (!missingPieces.some(piece => !piece.verified)) {
             this.emit("idle");
         } else {
             this.download(missingPieces);
         }
     }
 
-    public async download(missingPieces: number[]): Promise<void> {
+    public async download(missingPieces: ContentPiece[]): Promise<void> {
         this.missingPieces = missingPieces;
         if (this.contentTransferer == null) {
             logger.info("Skipping download... no master wire to download content from.");
@@ -83,15 +96,17 @@ export class Content extends ContentEmitter {
             }
             this.emit("downloading");
             if (this.contentTransferer.isConnected()) {
-                const missingPiece = this.missingPieces.shift();
+                const missingPiece = this.missingPieces.find(piece => !piece.verified && !piece.reserved);
                 if (missingPiece != null) {
-                    this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
+                    missingPiece.reserved = true;
+                    this.contentTransferer.requested(missingPiece.index, this.metadata.infoHash);
                 }
             } else {
                 this.contentTransferer.once("connected", () => {
-                    const missingPiece = this.missingPieces.shift();
+                    const missingPiece = this.missingPieces.find(piece => !piece.verified && !piece.reserved);
                     if (missingPiece != null) {
-                        this.contentTransferer.requested(missingPiece, this.metadata.infoHash);
+                        missingPiece.reserved = true;
+                        this.contentTransferer.requested(missingPiece.index, this.metadata.infoHash);
                     }
                 });
             }
@@ -108,7 +123,13 @@ export class Content extends ContentEmitter {
         const infoHash = buffer.toString("hex", 4, infoHashLength);
         const digest = Helpers.sha1(pieceBuffer);
 
-        logger.info(`Received (piece ${piece}, infoHash ${infoHash}, length ${buffer.length - infoHashLength}, sha1 ${digest}).`);
+        // TODO: Should digest be checked?
+        const missingPiece = this.missingPieces.find(p => p.index === +piece);
+        if (missingPiece != null) {
+            missingPiece.verified = true;
+        }
+
+        // logger.info(`Received (piece ${piece}, infoHash ${infoHash}, length ${buffer.length - infoHashLength}, sha1 ${digest}).`);
         this.emit("downloaded", buffer.length);
         fs.writeFile(path.join(this.storageDir, infoHash, piece), pieceBuffer, "binary");
         this.next(this.missingPieces, () => {
@@ -147,17 +168,22 @@ export class Content extends ContentEmitter {
         });
     }
 
-    private next(missingPieces: number[], cb: () => void): void {
-        if (missingPieces.length === 0) {
+    private next(missingPieces: ContentPiece[], cb: () => void): void {
+        if (!missingPieces.some(piece => !piece.verified)) {
             return typeof cb === "function" ? cb() : undefined;
         }
-        const missigPiece = missingPieces.shift();
-        if (missigPiece == null) {
-            logger.warn("Function next() tried to shift piece from an empty array.");
-            return;
-        }
+
+        // TODO: noia-master bottleneck needs to be fixed before fully testing missing pieces improvement. Lock 1 piece at a time.
         setTimeout(() => {
-            this.contentTransferer.requested(missigPiece, this.metadata.infoHash);
+            for (let i = 0; i < 1; i++) {
+                const missingPiece = this.missingPieces.find(piece => !piece.verified && !piece.reserved);
+                if (missingPiece != null) {
+                    missingPiece.reserved = true;
+                    this.contentTransferer.requested(missingPiece.index, this.metadata.infoHash);
+                    // logger.warn("Function next() tried to shift piece from an empty array.");
+                    // return;
+                }
+            }
         }, this.contentsClient.downloadRequestTimeoutMs);
     }
 
