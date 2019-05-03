@@ -54,7 +54,7 @@ export class ContentsClient extends ContentsClientEmitter {
             // This implementation of transfer speed control has limitation of delaying up to
             // speed calculation
             if (Math.ceil((timeoutMs * change) / 1000) > 1) {
-                logger.warn("Set maximum trasnfer speed is too small to perform reliably!");
+                logger.warn("Set maximum transfer speed is too small to perform reliably!");
                 return 950;
             }
 
@@ -220,7 +220,13 @@ export class ContentsClient extends ContentsClientEmitter {
         content.on("downloading", () => {
             logger.info(`downloading ${content.metadata.infoHash}...`);
         });
+        // TODO: Temportal RC debug code. Remove when RC is tested.
+        // let downloadedSize = 0;
+        // let downloadedTimes = 0;
         content.on("downloaded", chunkSize => {
+            // downloadedSize += chunkSize;
+            // downloadedTimes += 1;
+            // console.info(`Downloaded: ${downloadedSize / 1e6} MB (${downloadedTimes}).`);
             this.emit("downloaded", chunkSize);
             this.downloadSpeedSpeedometer(chunkSize);
         });
