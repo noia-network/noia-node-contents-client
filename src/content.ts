@@ -121,7 +121,7 @@ export class Content extends ContentEmitter {
         const piece = buffer.readUInt32BE(0).toString();
         const infoHashLength = 24;
         const infoHash = buffer.toString("hex", 4, infoHashLength);
-        const digest = Helpers.sha1(pieceBuffer);
+        // const digest = Helpers.sha1(pieceBuffer);
 
         // TODO: Should digest be checked?
         const missingPiece = this.missingPieces.find(p => p.index === +piece);
@@ -148,9 +148,7 @@ export class Content extends ContentEmitter {
 
         if (this.metadata.piecesIntegrity != null && this.metadata.piecesIntegrity[pieceIndex] !== digest) {
             logger.warn(
-                `Received (piece ${pieceIndex}, infoHash ${contentId}, length ${
-                    pieceBuffer.length
-                }, sha1 ${digest}) data is invalid. Expected sha1 ${this.metadata.piecesIntegrity[pieceIndex]}.`
+                `Received (piece ${pieceIndex}, infoHash ${contentId}, length ${pieceBuffer.length}, sha1 ${digest}) data is invalid. Expected sha1 ${this.metadata.piecesIntegrity[pieceIndex]}.`
             );
             this.deleteHash();
             return;
